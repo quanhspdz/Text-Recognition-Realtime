@@ -17,8 +17,14 @@ class TextBoxOverlay @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    private val textRectPaint = Paint().apply {
+    private val blockRectPaint = Paint().apply {
         color = Color.YELLOW
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+    }
+
+    private val textRectPaint = Paint().apply {
+        color = Color.GREEN
         style = Paint.Style.STROKE
         strokeWidth = 3f
     }
@@ -70,7 +76,14 @@ class TextBoxOverlay @JvmOverloads constructor(
 
         for (block in textBlocks) {
             val rect = getBoxRect(imageRectWidth, imageRectHeight, block.boundingBox!!, isBackCam)
-            canvas.drawRect(rect, textRectPaint)
+            canvas.drawRect(rect, blockRectPaint)
+
+            for (line in block.lines) {
+                for (element in line.elements) {
+                    val eRect = getBoxRect(imageRectWidth, imageRectHeight, element.boundingBox!!, isBackCam)
+                    canvas.drawRect(eRect, textRectPaint)
+                }
+            }
         }
     }
 }
