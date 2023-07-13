@@ -25,10 +25,10 @@
     <ImageButton
         android:layout_width="60dp"
         android:layout_height="50dp"
-        android:id="@+id/buttonSwitchCam"
+        android:id="@+id/buttonScanText"
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
-        android:src="@drawable/ic_switch_cam"
+        android:src="@drawable/ic_scan_text"
         android:layout_marginBottom="30dp"/>
 
     <ImageButton
@@ -38,6 +38,16 @@
         android:layout_marginStart="40dp"
         android:layout_alignParentBottom="true"
         android:src="@drawable/ic_invisible"
+        android:layout_marginBottom="30dp"/>
+
+    <ImageButton
+        android:layout_width="60dp"
+        android:layout_height="50dp"
+        android:id="@+id/buttonSwitchCam"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="40dp"
+        android:src="@drawable/ic_switch_cam"
         android:layout_marginBottom="30dp"/>
 
 </RelativeLayout>
