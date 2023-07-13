@@ -25,7 +25,11 @@ class TextAnalyzer : ImageAnalysis.Analyzer {
             val result = textRecognizer.process(image)
                 .addOnSuccessListener {
                     val listTextBlock = it.textBlocks
-
+                    binding?.textBoxOverlay?.setTextBlocks(
+                        listTextBlock,
+                        imageProxy.image!!.width.toFloat(),
+                        imageProxy.image!!.height.toFloat(),
+                        TextRecognitionActivity.isBackCam)
                 }
                 .addOnFailureListener {
                     Toast.makeText(context, it.toString(), Toast.LENGTH_SHORT).show()

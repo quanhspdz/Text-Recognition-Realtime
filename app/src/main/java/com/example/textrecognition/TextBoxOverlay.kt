@@ -8,6 +8,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
+import com.google.mlkit.vision.text.Text.TextBlock
 import kotlin.math.ceil
 
 class TextBoxOverlay @JvmOverloads constructor(
@@ -17,9 +18,23 @@ class TextBoxOverlay @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val textRectPaint = Paint().apply {
-        color = Color.RED
+        color = Color.YELLOW
         style = Paint.Style.STROKE
-        strokeWidth = 5f
+        strokeWidth = 3f
+    }
+
+    private var textBlocks: List<TextBlock> = arrayListOf()
+    private var imageRectWidth: Float = 0f
+    private var imageRectHeight: Float = 0f
+    private var isBackCam: Boolean = true
+
+    fun setTextBlocks(blocks: List<TextBlock>, imageRectWidth: Float, imageRectHeight: Float, isBackCam: Boolean) {
+        this.textBlocks = blocks
+        this.imageRectWidth = imageRectWidth
+        this.imageRectHeight = imageRectHeight
+        this.isBackCam = isBackCam
+
+        invalidate()
     }
 
     private fun getBoxRect(imageRectWidth: Float, imageRectHeight: Float, faceBoundingBox: Rect, isBackCam: Boolean): RectF {
@@ -53,5 +68,9 @@ class TextBoxOverlay @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
+        for (block in textBlocks) {
+            val rect = getBoxRect(imageRectWidth, imageRectHeight, block.boundingBox!!, isBackCam)
+            canvas.drawRect(rect, textRectPaint)
+        }
     }
 }
