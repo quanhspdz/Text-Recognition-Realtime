@@ -3,9 +3,11 @@ package com.example.textrecognition
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -17,10 +19,16 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.textrecognition.Constants.IMAGE_PICKER_REQUEST_CODE
 import com.example.textrecognition.databinding.ActivityTextRecognitionBinding
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.theartofdev.edmodo.cropper.CropImage
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+@Suppress("DEPRECATED_IDENTITY_EQUALS")
 class TextRecognitionActivity : AppCompatActivity() {
 
     lateinit var binding: ActivityTextRecognitionBinding
@@ -37,15 +45,11 @@ class TextRecognitionActivity : AppCompatActivity() {
 
         requestAllPermissions()
 
-        binding.buttonSwitchCam.setOnClickListener {
-            if (isBackCam) {
-                cameraFacing = CameraSelector.DEFAULT_FRONT_CAMERA
-                isBackCam = false
-                startCamera()
+        binding.buttonPickImage.setOnClickListener {
+            if (checkPermission()) {
+                openImagePicker()
             } else {
-                cameraFacing = CameraSelector.DEFAULT_BACK_CAMERA
-                isBackCam = true
-                startCamera()
+                Toast.makeText(this, "App does not have permission to access your phone storage!", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -148,5 +152,54 @@ class TextRecognitionActivity : AppCompatActivity() {
     companion object {
         var isBackCam = true
         var isVisible = true
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == IMAGE_PICKER_REQUEST_CODE && resultCode == RESULT_OK) {
+            val selectedImageUri: Uri? = data?.data
+            if (selectedImageUri != null) {
+                try {
+                    // start cropping activity for pre-acquired image saved on the device
+                    CropImage.activity(selectedImageUri)
+                        .start(this);
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Error loading image", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        if (requestCode === CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
+            val result = CropImage.getActivityResult(data)
+            if (resultCode === RESULT_OK) {
+                val resultUri = result.uri
+                scanTextFromImage(resultUri)
+            } else if (resultCode === CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
+                val error = result.error
+            }
+        }
+    }
+
+    private fun scanTextFromImage(resultUri: Uri?) {
+        val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, resultUri)
+        val image = InputImage.fromBitmap(bitmap, 0)
+
+        val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        val result = textRecognizer.process(image)
+            .addOnSuccessListener {
+                val listTextBlock = it.textBlocks
+                val text = TextAnalyzer.getText(listTextBlock)
+                intent = Intent(this, TextResultActivity::class.java)
+                intent.putExtra("result", text)
+                startActivity(intent)
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun openImagePicker() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        startActivityForResult(intent, IMAGE_PICKER_REQUEST_CODE)
     }
 }

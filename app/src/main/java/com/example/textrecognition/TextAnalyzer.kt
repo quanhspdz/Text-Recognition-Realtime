@@ -49,16 +49,18 @@ class TextAnalyzer : ImageAnalysis.Analyzer {
         }
     }
 
-    private fun getText(listBlock: List<TextBlock>) : String {
-        var textResult = ""
-        for (block in listBlock) {
-            textResult += "\t\t"
-            for (line in block.lines) {
-                textResult += line.text
+    companion object {
+        fun getText(listBlock: List<TextBlock>) : String {
+            var textResult = ""
+            for (block in listBlock) {
+                textResult += "\t\t"
+                for (line in block.lines) {
+                    textResult += line.text
+                }
+                textResult += "\n\n"
             }
-            textResult += "\n\n"
-        }
 
-        return textResult
+            return textResult
+        }
     }
 }
