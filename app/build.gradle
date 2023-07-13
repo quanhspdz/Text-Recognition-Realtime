@@ -69,4 +69,5 @@ dependencies {
     implementation 'com.google.mlkit:text-recognition:16.0.0'
 
     api 'com.theartofdev.edmodo:android-image-cropper:2.8.+'
+
 }
