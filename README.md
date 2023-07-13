@@ -1,4 +1,4 @@
-An Android Kotlin App
+An Realtime Text Recognition app (Android Kotlin)
 - Using Google ML Kit and Camera X to scan and read text realtime on camera
 - Screenshots:
 <p>
