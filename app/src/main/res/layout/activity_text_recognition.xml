@@ -16,7 +16,7 @@
         android:visibility="visible"
         android:layout_centerInParent="true" />
 
-    <com.example.textrecognition.TextBoxOverlay
+    <com.quanhspdz.textrecognition.TextBoxOverlay
         android:id="@+id/textBoxOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

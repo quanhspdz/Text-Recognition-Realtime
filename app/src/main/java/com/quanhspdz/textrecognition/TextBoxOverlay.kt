@@ -1,4 +1,4 @@
-package com.example.textrecognition
+package com.quanhspdz.textrecognition
 
 import android.content.Context
 import android.graphics.Canvas

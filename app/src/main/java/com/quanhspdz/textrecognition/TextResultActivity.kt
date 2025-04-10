@@ -1,10 +1,10 @@
-package com.example.textrecognition
+package com.quanhspdz.textrecognition
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
-import com.example.textrecognition.databinding.ActivityTextRecognitionBinding
-import com.example.textrecognition.databinding.ActivityTextResultBinding
+import com.quanhspdz.textrecognition.databinding.ActivityTextRecognitionBinding
+import com.quanhspdz.textrecognition.databinding.ActivityTextResultBinding
 import java.util.Locale
 
 class TextResultActivity : AppCompatActivity() {

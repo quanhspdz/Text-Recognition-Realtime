@@ -1,4 +1,4 @@
-package com.example.textrecognition
+package com.quanhspdz.textrecognition
 
 import org.junit.Test
 

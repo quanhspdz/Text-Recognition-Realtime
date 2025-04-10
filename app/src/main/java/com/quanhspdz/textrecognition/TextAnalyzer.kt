@@ -1,4 +1,4 @@
-package com.example.textrecognition
+package com.quanhspdz.textrecognition
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -6,7 +6,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import com.example.textrecognition.databinding.ActivityTextRecognitionBinding
+import com.quanhspdz.textrecognition.databinding.ActivityTextRecognitionBinding
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text.TextBlock
 import com.google.mlkit.vision.text.TextRecognition

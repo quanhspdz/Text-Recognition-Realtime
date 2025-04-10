@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace 'com.example.textrecognition'
-    compileSdk 33
+    namespace 'com.quanhspdz.textrecognition'
+    compileSdk 35
 
     defaultConfig {
-        applicationId "com.example.textrecognition"
+        applicationId "com.quanhspdz.textrecognition"
         minSdk 24
-        targetSdk 33
+        targetSdk 35
         versionCode 1
         versionName "1.0"
 
@@ -68,6 +68,6 @@ dependencies {
     // To recognize Latin script
     implementation 'com.google.mlkit:text-recognition:16.0.0'
 
-    api 'com.theartofdev.edmodo:android-image-cropper:2.8.+'
+    implementation("com.vanniktech:android-image-cropper:4.6.0")
 
 }
