@@ -1,5 +1,6 @@
 package com.quanhspdz.textrecognition
 
+import android.Manifest
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,6 +12,7 @@ import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -19,28 +21,21 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.canhub.cropper.CropImage
-import com.canhub.cropper.CropImageActivity
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
-import com.canhub.cropper.CropImageView
-import com.quanhspdz.textrecognition.Constants.IMAGE_PICKER_REQUEST_CODE
-import com.quanhspdz.textrecognition.databinding.ActivityTextRecognitionBinding
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.quanhspdz.textrecognition.databinding.ActivityTextRecognitionBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-@Suppress("DEPRECATED_IDENTITY_EQUALS")
 class TextRecognitionActivity : AppCompatActivity() {
 
-    lateinit var binding: ActivityTextRecognitionBinding
+    private lateinit var binding: ActivityTextRecognitionBinding
     private lateinit var cameraExecutor: ExecutorService
     private var cameraFacing = CameraSelector.DEFAULT_BACK_CAMERA
-    private val REQUEST_CROP_IMAGE = 101
-
 
     private val cropImageLauncher = registerForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
@@ -51,6 +46,15 @@ class TextRecognitionActivity : AppCompatActivity() {
         }
     }
 
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            if (permissions.all { it.value }) {
+                startCamera()
+            } else {
+                Toast.makeText(this, "Permissions not granted!", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,15 +79,11 @@ class TextRecognitionActivity : AppCompatActivity() {
         }
 
         binding.buttonSwitchVisible.setOnClickListener {
-            if (isVisible) {
-                isVisible = false
-                binding.buttonSwitchVisible.setImageResource(R.drawable.ic_visible)
-                binding.camPreview.visibility = View.INVISIBLE
-            } else {
-                isVisible = true
-                binding.buttonSwitchVisible.setImageResource(R.drawable.ic_invisible)
-                binding.camPreview.visibility = View.VISIBLE
-            }
+            isVisible = !isVisible
+            binding.buttonSwitchVisible.setImageResource(
+                if (isVisible) R.drawable.ic_invisible else R.drawable.ic_visible
+            )
+            binding.camPreview.visibility = if (isVisible) View.VISIBLE else View.INVISIBLE
         }
     }
 
@@ -91,46 +91,46 @@ class TextRecognitionActivity : AppCompatActivity() {
         if (checkPermission()) {
             startCamera()
         } else {
-            ActivityCompat.requestPermissions(
-                this,
-                Constants.REQUIRED_PERMISSION,
-                Constants.CAMERA_REQUEST_CODE_PERMISSION
-            )
+            requestPermissionLauncher.launch(Constants.REQUIRED_PERMISSION)
         }
     }
 
-    private fun checkPermission() =
-        Constants.REQUIRED_PERMISSION.all {
-            ContextCompat.checkSelfPermission(
-                baseContext,
-                it
-            ) == PackageManager.PERMISSION_GRANTED
+    private fun checkPermission(): Boolean {
+        return Constants.REQUIRED_PERMISSION.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
         }
+    }
 
     private fun startCamera() {
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+            Toast.makeText(this, "This device has no camera", Toast.LENGTH_LONG).show()
+            return
+        }
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
-            val preview = Preview.Builder()
-                .build()
-                .also {
-                    it.setSurfaceProvider(binding.camPreview.surfaceProvider)
-                }
-
-            val textAnalyzer = TextAnalyzer()
-            textAnalyzer.context = this@TextRecognitionActivity
-            textAnalyzer.binding = binding
-
-            val imageAnalyzer = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also {
-                    it.setAnalyzer(cameraExecutor, textAnalyzer)
-                }
-
             try {
+                val cameraProvider = cameraProviderFuture.get()
+
+                val preview = Preview.Builder()
+                    .build()
+                    .also {
+                        it.setSurfaceProvider(binding.camPreview.surfaceProvider)
+                    }
+
+                val textAnalyzer = TextAnalyzer().apply {
+                    context = this@TextRecognitionActivity
+                    binding = this@TextRecognitionActivity.binding
+                }
+
+                val imageAnalyzer = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also {
+                        it.setAnalyzer(cameraExecutor, textAnalyzer)
+                    }
+
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
                     this,
@@ -139,30 +139,47 @@ class TextRecognitionActivity : AppCompatActivity() {
                     imageAnalyzer
                 )
             } catch (e: Exception) {
-                Log.e(ContentValues.TAG, "Error: ${e.message}")
+                Log.e(ContentValues.TAG, "startCamera() failed: ${e.message}", e)
             }
-
         }, ContextCompat.getMainExecutor(this))
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == Constants.CAMERA_REQUEST_CODE_PERMISSION) {
-            if (checkPermission()) {
-                Toast.makeText(this, "Camera permission granted!", Toast.LENGTH_SHORT).show()
-                startCamera()
-            } else {
-                Toast.makeText(
-                    this,
-                    "App does not have permission to access camera!",
-                    Toast.LENGTH_SHORT
-                ).show()
-                finish()
+    private fun scanTextFromImage(resultUri: Uri?) {
+        try {
+            val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, resultUri)
+            val image = InputImage.fromBitmap(bitmap, 0)
+
+            val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            textRecognizer.process(image)
+                .addOnSuccessListener {
+                    val listTextBlock = it.textBlocks
+                    val text = TextAnalyzer.getText(listTextBlock)
+                    val intent = Intent(this, TextResultActivity::class.java)
+                    intent.putExtra("result", text)
+                    startActivity(intent)
+                }
+                .addOnFailureListener {
+                    Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
+                }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openImagePicker() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        startActivityForResult(intent, Constants.IMAGE_PICKER_REQUEST_CODE)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == Constants.IMAGE_PICKER_REQUEST_CODE && resultCode == RESULT_OK) {
+            data?.data?.let { uri ->
+                cropImageLauncher.launch(
+                    CropImageContractOptions(uri, CropImageOptions())
+                )
             }
         }
     }
@@ -179,42 +196,4 @@ class TextRecognitionActivity : AppCompatActivity() {
         var isBackCam = true
         var isVisible = true
     }
-
-    private fun scanTextFromImage(resultUri: Uri?) {
-        val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, resultUri)
-        val image = InputImage.fromBitmap(bitmap, 0)
-
-        val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-        textRecognizer.process(image)
-            .addOnSuccessListener {
-                val listTextBlock = it.textBlocks
-                val text = TextAnalyzer.getText(listTextBlock)
-                intent = Intent(this, TextResultActivity::class.java)
-                intent.putExtra("result", text)
-                startActivity(intent)
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun openImagePicker() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult(intent, IMAGE_PICKER_REQUEST_CODE)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == IMAGE_PICKER_REQUEST_CODE && resultCode == RESULT_OK) {
-            val selectedImageUri: Uri? = data?.data
-            if (selectedImageUri != null) {
-                cropImageLauncher.launch(
-                    CropImageContractOptions(selectedImageUri, CropImageOptions())
-                )
-            }
-        }
-    }
-
 }
